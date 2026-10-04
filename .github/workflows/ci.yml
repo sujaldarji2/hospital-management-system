@@ -1,0 +1,36 @@
+name: Hospital Management System CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Validate Project Files
+        run: |
+          test -f index.html
+          test -f Dockerfile
+          test -f docker-compose.yml
+          test -f patient-module/index.html
+          test -f doctor-module/index.html
+          test -f appointment-module/index.html
+          echo "All required project files are present."
+
+      - name: Build Docker Image
+        run: |
+          docker build -t hospital-management-system:${{ github.sha }} .
+
+      - name: Verify Docker Image
+        run: |
+          docker images hospital-management-system
+          echo "Docker image built successfully."
