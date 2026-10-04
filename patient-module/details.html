@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Details · MediCare HMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-hospital-alt"></i> MediCare</h3>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a class="nav-link" href="../index.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link active" href="index.html"><i class="fas fa-user-injured"></i> Patients</a></li>
+            <li class="nav-item"><a class="nav-link" href="../doctor-module/index.html"><i class="fas fa-user-md"></i> Doctors</a></li>
+            <li class="nav-item"><a class="nav-link" href="../appointment-module/index.html"><i class="fas fa-calendar-check"></i> Appointments</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+
+        <div class="page-header">
+            <h1><i class="fas fa-id-card me-2" style="color: var(--primary-blue);"></i>Patient Details</h1>
+            <a href="index.html" class="btn btn-outline-primary"><i class="fas fa-arrow-left me-2"></i>Back to List</a>
+        </div>
+
+        <div id="alertContainer"></div>
+        <div id="notFound" class="card p-5 text-center" style="display:none;">
+            <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+            <h5>Patient not found</h5>
+            <a href="index.html" class="btn btn-primary mt-3">Back to Patients</a>
+        </div>
+
+        <div class="card" id="detailsCard" style="display:none; max-width: 860px;">
+            <div class="card-header">
+                <span><i class="fas fa-user me-2" style="color: var(--primary-blue);"></i><span id="headerTitle">Patient Info</span></span>
+                <span class="badge-status badge-scheduled" id="patientIdBadge"></span>
+            </div>
+            <div class="card-body p-4">
+                <form id="patientForm" novalidate>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" required minlength="2">
+                            <div class="invalid-feedback">Please enter the patient's full name.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Age <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="age" min="0" max="150" required>
+                            <div class="invalid-feedback">Enter a valid age.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Gender <span class="text-danger">*</span></label>
+                            <select class="form-select" id="gender" required>
+                                <option value="">Select gender</option>
+                                <option>Male</option>
+                                <option>Female</option>
+                                <option>Other</option>
+                            </select>
+                            <div class="invalid-feedback">Please select a gender.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Phone <span class="text-danger">*</span></label>
+                            <input type="tel" class="form-control" id="phone" required pattern="[0-9+\-\s()]{7,20}">
+                            <div class="invalid-feedback">Enter a valid phone number.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email">
+                            <div class="invalid-feedback">Enter a valid email.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Address</label>
+                            <input type="text" class="form-control" id="address">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Update Patient</button>
+                        <button type="button" class="btn btn-outline-danger" onclick="removeCurrent()">
+                            <i class="fas fa-trash me-2"></i>Delete
+                        </button>
+                        <a href="index.html" class="btn btn-outline-secondary ms-auto">Cancel</a>
+                    </div>
+                </form>
+
+                <!-- Related Appointments -->
+                <hr class="my-4">
+                <h6 class="mb-3"><i class="fas fa-calendar-check me-2" style="color: var(--primary-blue);"></i>Appointment History</h6>
+                <div id="apptList" class="list-group"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/data.js"></script>
+    <script src="../assets/js/utils.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        let current = id ? getPatientById(id) : null;
+
+        if (!current) {
+            document.getElementById('notFound').style.display = 'block';
+        } else {
+            document.getElementById('detailsCard').style.display = 'block';
+            document.getElementById('headerTitle').innerText = current.name;
+            document.getElementById('patientIdBadge').innerText = current.id;
+            ['name', 'age', 'gender', 'phone', 'email', 'address'].forEach(f => {
+                const el = document.getElementById(f);
+                if (el) el.value = current[f] || '';
+            });
+            renderAppointments();
+        }
+
+        function renderAppointments() {
+            const appts = getAppointments().filter(a => a.patientId === id);
+            const list = document.getElementById('apptList');
+            list.innerHTML = '';
+            if (appts.length === 0) {
+                list.innerHTML = '<div class="text-muted small p-3">No appointments for this patient.</div>';
+                return;
+            }
+            appts.forEach(a => {
+                const doctor = getDoctorById(a.doctorId);
+                const div = document.createElement('div');
+                div.className = 'list-group-item d-flex justify-content-between align-items-center';
+                div.innerHTML = `
+                    <div>
+                        <strong>${escapeHtml(doctor ? doctor.name : 'N/A')}</strong><br>
+                        <small class="text-muted">${formatDate(a.date)} · ${formatTime(a.time)}</small>
+                    </div>
+                    <span class="badge-status badge-${a.status.toLowerCase()}">${a.status}</span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        document.getElementById('patientForm').addEventListener('submit', e => {
+            e.preventDefault();
+            const form = e.target;
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+            updatePatient(id, {
+                name: document.getElementById('name').value.trim(),
+                age: parseInt(document.getElementById('age').value, 10),
+                gender: document.getElementById('gender').value,
+                phone: document.getElementById('phone').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                address: document.getElementById('address').value.trim()
+            });
+            showAlert('alertContainer', 'Patient updated successfully.', 'success');
+            form.classList.remove('was-validated');
+        });
+
+        function removeCurrent() {
+            if (!confirm('Delete this patient and all related appointments?')) return;
+            deletePatient(id);
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

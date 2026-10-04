@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Appointment · MediCare HMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3><i class="fas fa-hospital-alt"></i> MediCare</h3>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a class="nav-link" href="../index.html"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link" href="../patient-module/index.html"><i class="fas fa-user-injured"></i> Patients</a></li>
+            <li class="nav-item"><a class="nav-link" href="../doctor-module/index.html"><i class="fas fa-user-md"></i> Doctors</a></li>
+            <li class="nav-item"><a class="nav-link active" href="index.html"><i class="fas fa-calendar-check"></i> Appointments</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+
+        <div class="page-header">
+            <h1><i class="fas fa-calendar-plus me-2" style="color: var(--primary-blue);"></i>Book Appointment</h1>
+            <a href="index.html" class="btn btn-outline-primary"><i class="fas fa-arrow-left me-2"></i>Back to List</a>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <div class="card" style="max-width: 860px;">
+            <div class="card-body p-4">
+                <form id="apptForm" novalidate>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Patient <span class="text-danger">*</span></label>
+                            <select class="form-select" id="patientId" required></select>
+                            <div class="invalid-feedback">Please select a patient.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Doctor <span class="text-danger">*</span></label>
+                            <select class="form-select" id="doctorId" required></select>
+                            <div class="invalid-feedback">Please select a doctor.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="date" required>
+                            <div class="invalid-feedback">Please choose a date.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Time <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="time" required>
+                            <div class="invalid-feedback">Please choose a time.</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Reason</label>
+                            <textarea class="form-control" id="reason" rows="3" placeholder="e.g. Chest pain, Follow-up..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="status">
+                                <option value="Scheduled" selected>Scheduled</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Book Appointment</button>
+                        <a href="index.html" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/data.js"></script>
+    <script src="../assets/js/utils.js"></script>
+    <script>
+        const patientSelect = document.getElementById('patientId');
+        const doctorSelect = document.getElementById('doctorId');
+
+        function populate() {
+            const patients = getPatients();
+            const doctors = getDoctors();
+
+            patientSelect.innerHTML = '<option value="">Select patient</option>' +
+                patients.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (${p.id})</option>`).join('');
+
+            doctorSelect.innerHTML = '<option value="">Select doctor</option>' +
+                doctors.map(d => `<option value="${d.id}">${escapeHtml(d.name)} — ${escapeHtml(d.specialization)}</option>`).join('');
+
+            if (patients.length === 0 || doctors.length === 0) {
+                document.getElementById('alertContainer').innerHTML = `
+                    <div class="alert alert-warning">
+                        You need at least one patient and one doctor before booking an appointment.
+                    </div>`;
+            }
+        }
+
+        document.getElementById('date').value = todayISO();
+        populate();
+
+        const form = document.getElementById('apptForm');
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+            const appt = {
+                patientId: patientSelect.value,
+                doctorId: doctorSelect.value,
+                date: document.getElementById('date').value,
+                time: document.getElementById('time').value,
+                reason: document.getElementById('reason').value.trim(),
+                status: document.getElementById('status').value
+            };
+            const saved = addAppointment(appt);
+            showAlert('alertContainer', `Appointment booked (ID: ${saved.id}). Redirecting...`, 'success');
+            form.classList.remove('was-validated');
+            form.reset();
+            document.getElementById('date').value = todayISO();
+            setTimeout(() => window.location.href = 'index.html', 1200);
+        });
+    </script>
+</body>
+</html>

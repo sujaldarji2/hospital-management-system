@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  medicare-hms:
+    build: .
+    container_name: medicare-hms
+    ports:
+      - "8080:80"
+    restart: unless-stopped
