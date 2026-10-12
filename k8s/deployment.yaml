@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hospital-management-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hospital-management-system
+  template:
+    metadata:
+      labels:
+        app: hospital-management-system
+    spec:
+      containers:
+        - name: hospital-management-system
+          image: hospital-management-system:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: hospital-management-config
+            - secretRef:
+                name: hospital-management-secret

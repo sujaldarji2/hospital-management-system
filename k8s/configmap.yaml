@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hospital-management-config
+data:
+  APP_NAME: "Hospital Management System"
+  APP_ENV: "production"
+  PATIENT_MODULE: "enabled"
+  DOCTOR_MODULE: "enabled"
+  APPOINTMENT_MODULE: "enabled"
